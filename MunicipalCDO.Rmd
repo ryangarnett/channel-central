@@ -1,0 +1,292 @@
+---
+title: "Municipal Chief Data Officer Review"
+output:
+  html_document:
+    toc: true
+    df_print: paged
+  html_notebook: null
+---
+City of Toronto Data Story  
+Open Data Team  
+Author: Ryan Garnett  
+July 22, 2018  
+
+### 1.0 Prerequisites and Source Data
+The following analysis was completed in R Studio, taking advantage of different packages, as well as a report on Chief Data Officers and Civic Analytics; produced by Harvard Kennedy School. The report was coded for easy access and analysis. Additional web searches were performed to further sources.
+
+```{r}
+# Loading the packages and data needed for the analysis
+library(tidyverse)
+library(RCurl)
+library(leaflet)
+
+sourceData <- read_csv("https://raw.githubusercontent.com/ryangarnett/dataStories/master/cdoEvaluation.csv")
+sourceData
+```
+
+
+### 2.0 The Chief Data Officer Role
+The role of the "Chief Data Officer" is relatively new with municipal governments, with some of the earliest appointments occurring in 2014. The position varies across organizations, however a single common element holds true for all: "move governments towards data driven decision making".
+
+On May 24, 2016 during the City of Toronto Executive Committee meeting, executive motion 15.25, raised "explore consolidating the Chief Information Officer and City Clerks open data responsibilities into one role to be administered through the office of the City Manager with the possibility of creating a Chief Data Officer (CDO) role". The request from Executive Committee was added to the City's Open Data Master Plan within Theme 2b, specifically "Explore creation of a Chief Data Officer role to take ownership of the Open Data program and related areas".  
+
+Within Canadian municipalities the Chief Data Officer role is at it's infancy, with minimal examples to explore and gain insights from. The United States however has numerous examples of Chief Data Officer roles in municipal and state government organizations. The US government CDO model has been in effect for a number of years, providing exceptional examples and insight into what the role should be within a government organization.  
+
+The Chief Data Officer role varies greatly across organizations. Generally speaking, the role has four common characteristics:  
+    
+* Support of chief executives  
+* Strong basic management and leadership skills
+* Standardizing tools and processes
+* Focus on important policy issues and operational improvements  
+
+
+#### 2.1 Responsibilities
+The Chief Data Officer role within municipal organizations can vary, depending on the areas of importance within the municipality. Within  the Harvard Kennedy School report, 19 US examples were available and indicated a range of responsibilities. The scope of the responsibilities for a CDO can include any combination of the following:  
+
+* data visualization
+* data analytics
+* data collection and data sharing standards
+* data management
+* geographic information system (GIS)
+* open data 
+* performance management
+
+
+For the purpose of this review two functions were analyzed; open data and data analysis. The profile for each CDO and their function was reviewed using available online resources. 
+
+
+```{r}
+# Chief Data Officer having open data responsibilities
+sourceData %>%
+  count(HasOpenData) %>%
+  arrange(desc(n))
+
+ggplot(sourceData, aes(HasOpenData)) +
+  geom_bar()
+```
+
+```{r}
+# Chief Data Officer having data analytics responsibilities
+
+sourceData %>%
+  count(HasAnalytics) %>%
+  arrange(desc(n))
+
+ggplot(sourceData, aes(HasAnalytics)) +
+  geom_bar()
+```
+
+##### 2.1.1 Responsibilities Findings
+The Chief Data Officer position tends to have responsibilities for both open data and data analytics. The 24 CDO positions poled indicates sixteen (67%) with open data and eleven (58%) have data analytics responsibilities within their role.   
+
+#### 2.2 Different Titles
+Chief Data Officer is the predominant title given to leaders responsible for managing data and analytics in municipal governments. The review from the Harvard Kennedy School indicates that Chief Data Officers have the ability to be more effective in their role when they have the authority to lead, and to bring divisions together on shared projects. The addition of "chief" provides a level of importance to the role.
+
+```{r}
+# Chief Data Officer title differences
+
+sourceData %>%
+  select(Title) %>%
+  count(Title) %>%
+  arrange(desc(n))
+```
+
+##### 2.2.1 Different Titles Findings
+The term "Chief Data Officer" was the most prominent term for the 24 positions reviewed within the analysis. Chief Data Officer is the one of three titles to be referenced more than once, nine times (38%).
+
+
+#### 2.3 Reporting Structure
+Position within an organization has the potential to impact the profile and availability to deliver greatly. Municipal structure differs between the United States and Canada, specifically regarding the Mayor position. The United States has a strong Mayor system where Canada has a weak Mayor system. Organization structure has an influence on the type and detail of work performed by CDO teams within a municipal government.  
+
+* reporting directly to a mayor may be more likely to focus on projects with high visibility directly to the mayor or the public
+* reporting directly to a mayor provides pressure to produce visible results quickly
+* not directly reporting to a mayor allows for work on projects requiring more time to demonstrate results, including more methodologically complex analytics projects
+
+
+```{r}
+# Chief Data Officer reporting structure
+
+sourceData %>%
+  select(ReportsTo) %>%
+  count(ReportsTo) %>%
+  arrange(desc(n))
+```
+
+Titles and organizational structure can vary greatly across municipalities. To better understand the Chief Data Officer reporting structure terms were standardized to an office or divisional level.
+
+
+```{r}
+# Grouping CDO reporting structure
+
+reporting <- select(sourceData, ReportsTo)
+mutate(reporting, ReportingTo = ifelse(ReportsTo == "Chief Information Officer", "CIO", 
+                          ifelse(ReportsTo == "Deputy Mayor", "Mayor's Office",
+                          ifelse(ReportsTo == "Mayor", "Mayor's Office",
+                          ifelse(ReportsTo == "1st Deputy Mayor", "Mayor's Office",
+                          ifelse(ReportsTo == "Chief Innovation & Performance Officer", "Performance & Innovation Office",
+                          ifelse(ReportsTo == "Chief Performance Officer", "Performance & Innovation Office",
+                          ifelse(ReportsTo == "Chief of Civic Innovation", "Performance & Innovation Office",
+                          ifelse(ReportsTo == "Assistant County Administrator", "CAO/City Manager's Office",
+                          ifelse(ReportsTo == "Chief Adimistrative Officer", "CAO/City Manager's Office",
+                          ifelse(ReportsTo == "Deputy City Manager", "CAO/City Manager's Office",
+                          ifelse(ReportsTo == "Director of Performance and Analytics", "Performance & Innovation Office",
+                          ifelse(ReportsTo == "Organizational Performance Director", "Performance & Innovation Office",
+                          ReportsTo))))))))))))) %>%
+  count(ReportingTo) %>%
+  arrange(desc(n))
+```
+
+
+##### 2.3.1 Reporting Structure Findings
+The Chief Data Officer position within the municipal setting varies greatly. From the 24 reviewed, there are ten different groups of reporting structures, with four groups having multiple instances. Five CDOs report to a municipal officer focused on innovation and performance. Other significant reporting structure were to the Mayor's Office, CAO/City Manager's Officer, and to the Chief Information Officer.
+
+#### 2.3 Supporting Team
+Municipal organizations developing Chief Data Officer roles typically establish a team to assist with the direction and mandate of the position. The size of the team varies, and in some cases the Chief Data Officer is the only member of the team.
+
+
+```{r}
+# Chief Data Officer team size
+summarise(sourceData, AvgTeamSize = mean(TeamSize, na.rm = T)) %>%
+  round(2)
+
+summarise(sourceData, MinTeamSize = min(TeamSize, na.rm = T)) %>%
+  round(0)
+
+summarise(sourceData, MaxTeamSize = max(TeamSize, na.rm = T)) %>%
+  round(0)
+```
+
+
+##### 2.4.1 Supporting Team Findings
+On average a municipal Chief Data Officer has a team consisting of ten people, with a range between 1 and 40.
+
+
+#### 2.5 Educational Backgroud
+The Chief Data Officer role is dynamic involving many different skills and abilities. The path to the CDO role can vary, depending on many factors, with education as a key component. Degree level and focus areas were analyzed for each CDO position, citing the highest obtained degree identified on their personal LinkedIn profile.  
+
+```{r}
+# Chief Data Officer type of degree
+sourceData %>%
+  count(DegreeType) %>%
+  arrange(desc(n))
+```
+
+Educational background differs between the 24 CDO positions, with having a Master's degree as the most common degree type. When reviewing the degree findings it is evident that there is a possibility to aggregate degree types to a higher level (i.e. types of Master's and bachelor degrees). 
+
+
+```{r}
+# Grouping degree types
+degreeClass <- mutate(sourceData, Degree = ifelse(DegreeType == "PhD", "Doctorate",
+                         ifelse(DegreeType == "Masters", "Masters",
+                          ifelse(DegreeType == "MBA", "Masters",
+                          ifelse(DegreeType == "MSc", "Masters",
+                          ifelse(DegreeType == "BA", "Bachelors",
+                          ifelse(DegreeType == "BSc", "Bachelors",
+                          "None")))))))
+
+ggplot(degreeClass, aes(Degree)) +
+  geom_bar()
+```
+
+
+A degree on it's own has minimal insight into the type of training that is expected from a municipal Chief Data Officer position. Analyzing the focus area of the degree provides greater detail into the level of training obtained by each person.
+
+
+```{r}
+# Chief Data Officer degree focus areas
+
+degreeFocus <- select(sourceData,DegreeFocus) %>%
+  count(DegreeFocus) %>%
+  arrange(desc(n))
+degreeFocus
+```
+
+
+Similar to the degree types, degree focus areas range in naming. Degree focus areas were categorized, providing a standardized naming reference.
+
+
+```{r}
+# Grouping degree focus areas
+select(degreeFocus, DegreeFocus) %>%
+mutate(focusArea = ifelse(DegreeFocus == "Public Policy Analysis", "Public Policy/Admin",
+                    ifelse(DegreeFocus == "Public Policy", "Public Policy/Admin",
+                    ifelse(DegreeFocus == "City Planning", "City Planning",
+                    ifelse(DegreeFocus == "Computer Programming and Design", "Computer Science",
+                    ifelse(DegreeFocus == "Computer Science", "Computer Science",
+                    ifelse(DegreeFocus == "Economics", "Economics",
+                    ifelse(DegreeFocus == "Engineering", "Engineering",
+                    ifelse(DegreeFocus == "Entrepreneurship in Science, Engineer and Technology", "Entrepreneurship",
+                    ifelse(DegreeFocus == "Environment Heath & Public Administration", "Environmental Health",
+                    ifelse(DegreeFocus == "Information Systems", "Information Systems",
+                    ifelse(DegreeFocus == "International Business", "Business",
+                    ifelse(DegreeFocus == "Organizational Change", "Organizational Change",
+                    ifelse(DegreeFocus == "Political Science", "Political Science",
+                    ifelse(DegreeFocus == "Politics", "Political Science",
+                    ifelse(DegreeFocus == "Public Administration", "Public Policy/Admin",
+                    ifelse(DegreeFocus == "Soil Science", "Soil Science",
+                    "None"))))))))))))))))) %>%
+  arrange(focusArea)
+```
+
+
+```{r}
+mutate(sourceData, FocusArea = ifelse(DegreeFocus == "Public Policy Analysis", "Public Policy/Admin",
+                    ifelse(DegreeFocus == "Public Policy", "Public Policy/Admin",
+                    ifelse(DegreeFocus == "City Planning", "City Planning",
+                    ifelse(DegreeFocus == "Computer Programming and Design", "Computer Science",
+                    ifelse(DegreeFocus == "Computer Science", "Computer Science",
+                    ifelse(DegreeFocus == "Economics", "Economics",
+                    ifelse(DegreeFocus == "Engineering", "Engineering",
+                    ifelse(DegreeFocus == "Entrepreneurship in Science, Engineer and Technology", "Entrepreneurship",
+                    ifelse(DegreeFocus == "Environment Heath & Public Administration", "Environmental Health",
+                    ifelse(DegreeFocus == "Information Systems", "Information Systems",
+                    ifelse(DegreeFocus == "International Business", "Business",
+                    ifelse(DegreeFocus == "Organizational Change", "Organizational Change",
+                    ifelse(DegreeFocus == "Political Science", "Political Science",
+                    ifelse(DegreeFocus == "Politics", "Political Science",
+                    ifelse(DegreeFocus == "Public Administration", "Public Policy/Admin",
+                    ifelse(DegreeFocus == "Soil Science", "Soil Science",
+                    "None"))))))))))))))))) %>%
+count(FocusArea) %>%
+  arrange(desc(n))
+```
+
+
+##### 2.5.1 Educational Background Findings
+Post secondary training tends to be an important factor for municipal Chief Data Officers, with 16 individuals achieving higher than a bachelors degree, and 58% completing a Master's degree. The single most represented focus area was related to public policy and public administration. 
+
+
+### 3.0 Municipal CDO Distribution
+The study by the Harvard Kennedy School reviewed Chief Data Officer positions in 19 municipalities in the United States, representing fourteen states; additional research identified five similar roles in Canada, each in different provinces. The interactive map below provides a visual means for exploring the characteristics for each of the CDO potions. 
+
+```{r}
+# Map the CDO locations
+
+m <- leaflet(width = "100%") %>%
+  addTiles() %>%
+  addMarkers(lng = sourceData$Long, lat = sourceData$Lat, 
+             popup = paste("Organization:", sourceData$Organization, "<br>",
+                           "Title:", sourceData$Title, "<br>",
+                           "Reports to:", sourceData$ReportsTo, "<br>",
+                           "Team size:", sourceData$TeamSize, "<br>",
+                           "Responsible for open data:", sourceData$HasOpenData, "<br>",
+                           "Responsible for analytics:", sourceData$HasAnalytics)) %>%
+  addProviderTiles(providers$CartoDB.Positron)
+m
+```
+
+### 4.0 Conclusion and Recommendations
+
+Data and information are critical for evidence based decisions, a significant component for achieving an open government. Upon reviewing 24 municipal Chief Data Officer type roles in North America it appears evident that a City such as Toronto should have a similar role within the organization. As the vast majority of municipal CDO's are responsible for the organization's Open Data program, it would be recommended that the City of Toronto establish a Chief Data Officer position, with Open Data being one of the components in the position's portfolio. 
+
+
+### 5.0 Source Information
+
+Lessons from Leading CDOs: A Framework for Better Civic Analytics <br>
+Harvard Kennedy School - Ash Center for Democratic Governance and Innovation <br>
+http://ash.harvard.edu/files/ash/files/leasons_from_leading_cdos.pdf
+
+Chief Data Officer Profiles <br>
+www.linkedin.com
+
+
